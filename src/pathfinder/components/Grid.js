@@ -9,18 +9,35 @@ const Grid = (props) => {
   const [gridState, setGridState] = useState({
     grid: [],
     mousePressed: false,
+    algoStarted: false
   });
 
   useEffect(() => {
-    setGridState({ ...gridState, grid: getGrid() });
+    let grid = gridState.grid;
+    if(grid.length === 0)
+      grid = getGrid();
+
+    const newGrid = grid.map((arrayOfObject) => {
+      const arr = arrayOfObject.map((obj) => {
+        const newObj = {
+          ...obj,
+          isStart: obj.row === props.node.x1 && obj.col === props.node.y1,
+          isFinish: obj.row === props.node.x2 && obj.col === props.node.y2
+        };
+        return newObj;
+      });
+      return arr;
+    });
+
+    setGridState({ ...gridState, grid: newGrid });
   }, [props]);
 
   const getGrid = () => {
     const grid = [];
 
-    for (let row = 0; row < 20; row++) {
+    for (let row = 0; row < 22; row++) {
       let currRow = [];
-      for (let col = 0; col < 50; col++) {
+      for (let col = 0; col < 57; col++) {
         const currentNode = {
           row,
           col,
@@ -30,8 +47,8 @@ const Grid = (props) => {
           isVisited: false,
           isWall: false,
           previousNode: null,
-          isStart: row === props.node.x1 && col === props.node.y1,
-          isFinish: row === props.node.x2 && col === props.node.y2,
+          isStart: row === 10 && col === 20,
+          isFinish: row === 10 && col === 40,
         };
         currRow.push(currentNode);
       }
@@ -39,6 +56,25 @@ const Grid = (props) => {
     }
 
     return grid;
+  };
+
+  const clear = () => {
+    props.setDefaultNode();
+    setGridState({ mousePressed: false, algoStarted: false, grid: getGrid() });
+
+    for(let i = 0; i < 22; i++) {
+      for(let j = 0; j < 57; j++) {
+        const id = document.getElementById(`node-${i}-${j}`);
+        
+        if(i === 10 && j === 20) {
+          id.className = "node node-start";
+        } else if(i == 10 && j === 40) {
+          id.className = "node node-finish";
+        } else {
+          id.className = "node ";
+        }
+      }
+    }
   };
 
   const getNewGridWithToggledWall = (row, col) => {
@@ -55,7 +91,7 @@ const Grid = (props) => {
 
   const handleMouseDown = (row, col) => {
     const newGrid = getNewGridWithToggledWall(row, col);
-    setGridState({ grid: newGrid, mousePressed: true });
+    setGridState({ ...gridState, grid: newGrid, mousePressed: true });
   };
 
   const handleMouseEnter = (row, col) => {
@@ -73,16 +109,28 @@ const Grid = (props) => {
     const grid = gridState.grid;
     const startNode = grid[props.node.x1][props.node.y1];
     const endNode = grid[props.node.x2][props.node.y2];
-    
-    if (algo === "Dijkstra's") {
-      const visitedNodesInOrder = dijkstra(grid, startNode, endNode);
-      const nodesInShortestPathOrder = getNodesInShortestPathOrder(endNode); // backtrack the end node
-      animate(visitedNodesInOrder, nodesInShortestPathOrder);
 
-    } else if (algo === "A*") {
-      const visitedNodesInOrder = astar(grid, startNode, endNode);
-      const nodesInShortestPath = getNodesInShortestPath(endNode); // backtrack the end node
-      animate(visitedNodesInOrder, nodesInShortestPath);
+    const visitedNodesInOrder = getVisitedNodesInOrder(algo, grid, startNode, endNode);
+    const nodesInShortestPathOrder = nodeInShortestPathOrder(algo, endNode);
+
+    if(gridState.algoStarted === false) {
+      animate(visitedNodesInOrder, nodesInShortestPathOrder);
+    }
+  };
+
+  const getVisitedNodesInOrder = (algo, grid, startNode, endNode) => {
+    if(algo === "Dijkstra's") {
+      return dijkstra(grid, startNode, endNode);
+    } else if(algo === "A*") {
+      return astar(grid, startNode, endNode);
+    }
+  };
+
+  const nodeInShortestPathOrder = (algo, endNode) => {
+    if(algo === "Dijkstra's") {
+      return getNodesInShortestPathOrder(endNode);         // backtrack the end node
+    } else if(algo === "A*") {
+      return getNodesInShortestPath(endNode);       // backtrack the end node
     }
   };
 
@@ -111,6 +159,11 @@ const Grid = (props) => {
         ).className = "node node-shortest-path";
       }, 50 * i);
     }
+
+    const len = nodesInShortestPathOrder.length;
+    setTimeout(() => {
+      setGridState({ ...gridState, algoStarted: false });
+    }, 50 * len);
   };
 
   return (
@@ -119,6 +172,7 @@ const Grid = (props) => {
         visAlgo={visAlgo}
         inputEvent={props.inputEvent}
         node={props.node}
+        clear={clear}
       />
       <div className="info">
         <h5> Click on the grid to add walls!! </h5>

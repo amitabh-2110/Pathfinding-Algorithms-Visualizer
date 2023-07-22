@@ -64,13 +64,15 @@ function Navbar(props) {
                 </ul>
               </li>
               <li className="nav-item ms-3 me-3 fw-bold">
-                <a className="nav-link" href="#" onClick={() => window.location.reload(false)}>
+                <a className="nav-link" href="#" /*onClick={() => window.location.reload(false)}*/ onClick={() => {props.clear(algoName)}}>
                   Clear
                 </a>
               </li>
               <li className="nav-item mt-1 ms-5">
                 <button className="bg-danger rounded" onClick={() => {
-                  props.visAlgo(algoName);
+                  if(algoName !== "") {
+                    props.visAlgo(algoName);
+                  }
                 }}>
                   Visualize {algoName}
                 </button>
